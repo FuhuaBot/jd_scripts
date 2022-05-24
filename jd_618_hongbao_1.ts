@@ -1,5 +1,6 @@
 /**
  * 20点开奖的🧧
+ * cron: 10 20,21,22 * * *
  */
 
 import axios from 'axios'
@@ -76,7 +77,6 @@ let shareCodeHW: string[] = [], shareCodeSelf: string  [] = [], shareCode: strin
       await wait(1000)
     }
   }
-
 })()
 
 async function api(fn: string, body: object) {
