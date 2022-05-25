@@ -68,7 +68,7 @@ class Jd_618 extends JDHelloWorld {
         "taskToken": tp.taskToken,
         "ss": JSON.stringify({extraData: {log: encodeURIComponent(log.log), sceneid: 'RAhomePageh5'}, secretp: secretp, random: log.random})
       })
-      this.o2s(data)
+      this.o2s(data, 'async feed')
       times++
       await this.wait(3000)
     }
@@ -79,13 +79,8 @@ class Jd_618 extends JDHelloWorld {
     let res: any, data: any, log: { random: string, log: string }
     res = await this.api('promote_getHomeData', {})
     let secretp: string = res.data.result.homeMainInfo.secretp
-    let totalScore: number = parseInt(res.data.result.homeMainInfo.raiseInfo.totalScore), nextLevelScore: number = parseInt(res.data.result.homeMainInfo.raiseInfo.scenceMap.sceneInfo[0].redNum.nextLevelScore)
+    let totalScore: number = parseInt(res.data.result.homeMainInfo.raiseInfo.totalScore)
     console.log('当前金币', totalScore)
-
-    log = await this.getLog()
-    res = await this.api('promote_collectAutoScore', {ss: JSON.stringify({extraData: {log: encodeURIComponent(log.log), sceneid: 'RAhomePageh5'}, secretp: secretp, random: log.random})})
-    console.log('收金币', parseInt(res.data.result.produceScore))
-    await this.wait(3000)
 
     res = await this.api('promote_getHomeData', {})
     if (res.data.result.homeMainInfo.todaySignStatus === 0) {
@@ -97,7 +92,7 @@ class Jd_618 extends JDHelloWorld {
       } else if (data?.data?.result?.scoreResult) {
         console.log('金币', parseInt(data.data.result.scoreResult.todaySignScore))
       } else {
-        this.o2s(data)
+        this.o2s(data, 'promote_sign')
       }
       await this.wait(3000)
     } else {
@@ -105,14 +100,16 @@ class Jd_618 extends JDHelloWorld {
     }
 
     for (let i = 0; i < 20; i++) {
-      if (nextLevelScore <= totalScore) {
-        console.log(nextLevelScore, totalScore)
+      res = await this.api('promote_getHomeData', {})
+      if (i === 0) console.log('当前分红', parseInt(res.data.result.homeMainInfo.raiseInfo.redInfo.red))
+      let sceneInfo: any = res.data.result.homeMainInfo.raiseInfo.scenceMap.sceneInfo
+      sceneInfo.sort((a, b) => parseInt(a.redNum.nextLevelScore) - parseInt(b.redNum.nextLevelScore))
+      sceneInfo = sceneInfo[0]
+      if (sceneInfo.redNum.nextLevelScore <= totalScore) {
         try {
+          console.log('转盘场景', sceneInfo.scenceId)
           log = await this.getLog()
-          let scenceId: number = this.getRandomNumberByRange(1, 5)
-          if (i === 0) scenceId = 1
-          console.log(scenceId)
-          res = await this.api('promote_raise', {"scenceId": scenceId, "ss": JSON.stringify({extraData: {log: encodeURIComponent(log.log), sceneid: 'RAhomePageh5'}, secretp: secretp, random: log.random})})
+          res = await this.api('promote_raise', {"scenceId": sceneInfo.scenceId, "ss": JSON.stringify({extraData: {log: encodeURIComponent(log.log), sceneid: 'RAhomePageh5'}, secretp: secretp, random: log.random})})
           if (res.data.result.levelUpAward.redNum) {
             console.log('转盘分红', res.data.result.levelUpAward.redNum)
           } else {
@@ -120,16 +117,17 @@ class Jd_618 extends JDHelloWorld {
           }
           res = await this.api('promote_getHomeData', {})
           totalScore = parseInt(res.data.result.homeMainInfo.raiseInfo.totalScore)
-          nextLevelScore = parseInt(res.data.result.homeMainInfo.raiseInfo.scenceMap.sceneInfo[0].redNum.nextLevelScore)
           await this.wait(3000)
         } catch (e) {
           break
         }
+      } else {
+        break
       }
+      await this.wait(2000)
     }
 
     res = await this.api('qryCompositeMaterials', {"qryParam": "[{\"type\":\"advertGroup\",\"mapTo\":\"brand\",\"id\":\"06306976\"}]", "activityId": "2fUope8TDN3dUJfNzQswkBLc7uE8", "pageId": "", "reqSrc": "", "applyKey": "jd_star"})
-    this.o2s(res)
     let qryList: any = res.data.brand.list
     for (let t of qryList) {
       let ActivityId: string = t.extension.venderLink1.match(/Zeus\/(\w*)/)[1]
@@ -142,18 +140,12 @@ class Jd_618 extends JDHelloWorld {
         if (tp.times === 0) {
           if (tp.taskName === '每日签到') {
             log = await this.getLog()
-            data = await this.api('template_mongo_collectScore', {
-              "taskToken": tp.simpleRecordInfoVo.taskToken,
-              "taskId": tp.taskId,
-              "actionType": 0,
-              "appId": appId,
-              "safeStr": `{\"random\":\"${log.random}\",\"sceneid\":\"RAGJSYh5\",\"log\":\"${log.log}\"}`
-            })
+            data = await this.api('template_mongo_collectScore', {"taskToken": tp.simpleRecordInfoVo.taskToken, "taskId": tp.taskId, "actionType": 0, "appId": appId, "safeStr": `{\"random\":\"${log.random}\",\"sceneid\":\"RAGJSYh5\",\"log\":\"${log.log}\"}`})
             console.log('签到成功', parseInt(data.data.result.acquiredScore))
             await this.wait(3000)
-          } else if (tp.followShopVo || tp.productInfoVos || tp.shoppingActivityVos) {
+          } else if (tp.followShopVo || tp.productInfoVos || tp.shoppingActivityVos || t.brandMemberVos) {
             for (let i = tp.times; i < tp.maxTimes; i++) {
-              let vos: any = tp.followShopVo || tp.productInfoVos || tp.shoppingActivityVos
+              let vos: any = tp.followShopVo || tp.productInfoVos || tp.shoppingActivityVos || t.brandMemberVos
               console.log(tp.taskName)
               data = await this.api('template_mongo_collectScore', {"taskToken": vos[i].taskToken, "taskId": tp.taskId, "actionType": 0, "appId": appId, "safeStr": `{\"random\":\"${log.random}\",\"sceneid\":\"RAGJSYh5\",\"log\":\"${log.log}\"}`})
               console.log(parseInt(data.data.result.acquiredScore))
@@ -186,13 +178,13 @@ class Jd_618 extends JDHelloWorld {
           lotteryTimes++
         }
       }
+      await this.wait(1000)
     }
 
     for (let loop = 0; loop < 3; loop++) {
       try {
         console.log('loop', loop)
         res = await this.api('promote_getTaskDetail', {})
-        this.o2s(res)
         if (loop === 0) {
           let inviteId: string = res.data.result.inviteId
           console.log('助力码', inviteId)
@@ -246,9 +238,8 @@ class Jd_618 extends JDHelloWorld {
                 log = await this.getLog()
                 console.log(tp.title)
                 data = await this.api('promote_collectScore', {"taskId": t.taskId, "taskToken": tp.taskToken, "actionType": 1, "ss": JSON.stringify({extraData: {log: encodeURIComponent(log.log), sceneid: 'RAhomePageh5'}, secretp: secretp, random: log.random})})
-                console.log(data.data.bizMsg)
                 await this.wait(t.waitDuration * 1000 || 3000)
-                if (![3].includes(t.taskType)) {
+                if (![3, 26].includes(t.taskType)) {
                   data = await this.qryViewkitCallbackResult(tp.taskToken)
                   console.log(data.toast.subTitle)
                   await this.wait(5000)
@@ -309,7 +300,9 @@ class Jd_618 extends JDHelloWorld {
   }
 
   async help(users: User[]) {
+    return
     let shareCodeHW_group: any = [], shareCodeHW: any = [], shareCode: any = [], full: string[] = [], groups: GROUP[] = []
+    /*
     for (let user of users) {
       try {
         console.log(`\n开始【京东账号${user.index + 1}】${user.UserName} 获取队伍信息\n`)
@@ -333,6 +326,8 @@ class Jd_618 extends JDHelloWorld {
       await this.wait(2000)
     }
 
+     */
+
     for (let user of users) {
       try {
         console.log(`\n开始【京东账号${user.index + 1}】${user.UserName}\n`)
@@ -348,6 +343,7 @@ class Jd_618 extends JDHelloWorld {
         } else {
           shareCode = Array.from(new Set([...this.shareCodeSelf, ...shareCodeHW]))
         }
+
         this.o2s(this.shareCodeSelf, '内部助力')
         for (let code of shareCode) {
           if (!full.includes(code)) {
