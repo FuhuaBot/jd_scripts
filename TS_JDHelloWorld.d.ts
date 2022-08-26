@@ -25,7 +25,8 @@ declare class JDHelloWorld {
         taskType?: number;
     }): object;
     getSign(fn: string, body: object): Promise<string>;
-    cashDoSign(): Promise<unknown>;
+    getIosVer(): string;
+    getFp(): Promise<unknown>;
     run(son: {
         main: any;
         help?: any;
