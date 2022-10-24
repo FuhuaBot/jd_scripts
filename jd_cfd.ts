@@ -82,7 +82,6 @@ class Cfd extends JDHelloWorld {
       'strVersion': '1.0.1',
       'dwIsReJoin': '0',
     })
-    this.o2s(res)
     await this.wait(1000)
 
     for (let xb of res.XbStatus.XBDetail) {
@@ -94,6 +93,20 @@ class Cfd extends JDHelloWorld {
         console.log('寻宝', xb.strIndex, data.AwardInfo.ddwValue)
         await this.wait(5000)
       }
+    }
+
+    // 背包
+    res = await this.api('story/querystorageroom', {
+      _stk: '_cfd_t,_imbfd,bizCode,dwEnv,ptag,source,strDeviceId,strZone',
+    })
+    for (let t of res.Data.Office) {
+      data = await this.api('story/sellgoods', {
+        _stk: '_cfd_t,_imbfd,bizCode,dwEnv,dwSceneId,ptag,source,strDeviceId,strTypeCnt,strZone',
+        dwSceneId: '1',
+        strTypeCnt: `${t.dwType}:${t.dwCount}`,
+      })
+      console.log('卖贝壳', data.Data.ddwCoin)
+      await this.wait(2000)
     }
 
     // 贝壳
